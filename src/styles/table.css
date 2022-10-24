@@ -1,0 +1,90 @@
+table {
+  width: 100%;
+}
+tbody tr:nth-child(2n) {
+  /* background-color: #f2f2f2; */
+}
+td {
+  padding: 16px;
+  font-size: 14px;
+  text-transform: capitalize;
+  /* text-align: center; */
+}
+thead,
+tfoot {
+  background-color: #333;
+  color: #fff;
+}
+.paginated-bar {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin-top: 30px;
+}
+.page-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 13px;
+  border: 1px solid gray;
+  background-color: #f2f2f2;
+  text-align: center;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+}
+.table-actions {
+  display: flex;
+  justify-content: flex-end;
+  height: 40px;
+}
+.page-info {
+  display: flex;
+  align-items: center;
+}
+.page-action {
+  margin-left: 10px;
+}
+.page-action img {
+  width: 24px;
+  margin-left: 5px;
+  cursor: pointer;
+}
+.page-action--disabled {
+  pointer-events: none;
+}
+.row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.row-actions img {
+  width: 30px;
+  margin-right: 25px;
+  cursor: pointer;
+}
+.row-actions span {
+  margin-left: 30px;
+  cursor: pointer;
+  color: blue;
+  font-size: 15px;
+}
+
+.row-collapse {
+  min-height: 50px;
+  width: 100%;
+  border: 1px solid grey;
+  margin-top: 15px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  text-align: left;
+}
+.row-collapse div {
+  margin: 15px;
+}
+.field-label {
+  font-weight: bold;
+}

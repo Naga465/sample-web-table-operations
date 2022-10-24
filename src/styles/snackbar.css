@@ -1,0 +1,17 @@
+.snack-bar {
+    position: absolute;
+    bottom: 50px;
+    left: 100px;
+    display: flex;
+    color: white;
+    width: max-content;
+    padding: 20px;
+    min-width: 300px;
+    background-color: grey;
+}
+.success { 
+    background-color: green;
+}
+.error { 
+    background-color: red;
+}
