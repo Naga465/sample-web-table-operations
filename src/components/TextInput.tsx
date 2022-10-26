@@ -1,11 +1,8 @@
 import { FC } from "react";
+import '../styles/textinput.css'
 
-type TextInuputProps = {
-    onChange?: (event:any) => void
-}
-const TextInput :FC<TextInuputProps>  = (props) => { 
-    return (
-        <input className="text-input" />
-    )
-} 
+interface TextInuputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
+const TextInput: FC<TextInuputProps> = (props) => {
+  return <input className="text-input" {...props} />;
+};
 export default TextInput;

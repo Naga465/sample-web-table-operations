@@ -7,17 +7,12 @@ import { useState } from "react";
 import { SnackBarContext, SnackBarPropsType } from "./context";
 
 function App() {
-  const { data, paginatedData, totalPages, deleteRow } = useTable({
-    initData: [],
-    itemsPerPage: ITEMS_PER_PAGE,
-  });
+ 
   const [snackBarState, setSnackBarState] = useState<SnackBarPropsType>({
     message: "",
     show:false,
     error :false
   });
-
-  console.log(snackBarState,"snackBarState")
 
   return (
     <div className="App">
@@ -30,12 +25,7 @@ function App() {
             },
           }}
         >
-          <Table
-            data={data}
-            paginatedData={paginatedData}
-            totalPages={totalPages}
-            deleteRow={deleteRow}
-          />
+          <Table/>
         </SnackBarContext.Provider>
       </div>
       <SnackBar message={snackBarState.message} timeLapse={1} show ={snackBarState.show} error={snackBarState.error} />

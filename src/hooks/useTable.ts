@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiInfoType, APIRequestInfo, callApi, PageData } from "../api";
 
 type Props = {
@@ -7,10 +7,12 @@ type Props = {
   itemsPerPage?: number;
 };
 
-function useTable({ initData = [], itemsPerPage }: Props) {
+function useTable({ initData = [], itemsPerPage = 10 }: Props) {
   const [data, setData] = useState(initData);
   const [paginatedData, setPaginatedData] = useState<PageData>({});
-  const [totalPages, setTotalPages] = useState<number>(1);
+  const totalPages = useRef<number>(1);
+  const apiData = useRef<ApiInfoType[]>(initData);
+  
   useEffect(() => {
     async function fetchApisInfo() {
       try {
@@ -20,6 +22,7 @@ function useTable({ initData = [], itemsPerPage }: Props) {
         };
         const data = await callApi(RequestInfo);
         setData(data);
+        apiData.current = [...data];
       } catch (err) {
         throw err;
       }
@@ -28,7 +31,6 @@ function useTable({ initData = [], itemsPerPage }: Props) {
   }, []);
 
   useEffect(() => {
-    if (!itemsPerPage || !data.length) return;
     let page = 1;
     let pageData: PageData = {};
     data.forEach((ele, index) => {
@@ -37,12 +39,12 @@ function useTable({ initData = [], itemsPerPage }: Props) {
       }
       if (!pageData[page]) {
         pageData[page] = [ele];
-        return;
+      } else {
+        pageData[page].push(ele);
       }
-      pageData[page].push(ele);
     });
     setPaginatedData(pageData);
-    setTotalPages(page);
+    totalPages.current = page;
   }, [itemsPerPage, data]);
 
   const deleteRow = useCallback(async (id: number) => {
@@ -63,7 +65,14 @@ function useTable({ initData = [], itemsPerPage }: Props) {
     []
   );
 
-  return { data, paginatedData, totalPages, deleteRow };
+  return {
+    apiData:apiData.current,
+    data,
+    paginatedData,
+    totalPages: totalPages.current,
+    deleteRow,
+    setData,
+  };
 }
 
 export default useTable;

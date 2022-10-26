@@ -1,16 +1,26 @@
-import { FC, Fragment, useContext, useState } from "react";
+import {
+  FC,
+  Fragment,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { ApiInfoType, PageData } from "../api";
 import { ITEMS_PER_PAGE } from "../constants";
 import { SnackBarContext } from "../context";
+import useTable from "../hooks/useTable";
 import "../styles/table.css";
+import { debounce } from "../utils";
 import TextInput from "./TextInput";
 
-type Props = {
-  data: ApiInfoType[];
-  paginatedData: PageData;
-  totalPages: number;
-  deleteRow:(id:number) => void
-};
+type Props = {};
+
+enum SortBy {
+  "ID",
+  "NAME",
+}
 
 const headers: { label: string; apiKey: keyof ApiInfoType }[] = [
   {
@@ -53,11 +63,11 @@ const extraContent: { label: string; apiKey: keyof ApiInfoType }[] = [
 const TableRow = ({
   row,
   index,
-  handleDelete
+  handleDelete,
 }: {
   row: ApiInfoType;
   index: number;
-  handleDelete?:(id:number) => void
+  handleDelete?: (id: number) => void;
 }): JSX.Element => {
   const [viewMore, setViewMore] = useState<boolean>(false);
   const handleRowActions = async (event: any) => {
@@ -71,12 +81,12 @@ const TableRow = ({
         break;
       }
       case "delete": {
-          if(!handleDelete) return;
-          try{
-            await handleDelete(row.id)
-          }catch(err){
-            alert(err);
-          }
+        if (!handleDelete) return;
+        try {
+          await handleDelete(row.id);
+        } catch (err) {
+          alert(err);
+        }
         break;
       }
       default: {
@@ -117,7 +127,7 @@ const TableRow = ({
 };
 const RenderTableBody = ({
   data,
-  handleDelete
+  handleDelete,
 }: {
   data: ApiInfoType[];
   handleDelete?: (event: any) => void;
@@ -127,7 +137,12 @@ const RenderTableBody = ({
   return (
     <>
       {data.map((row, index) => (
-        <TableRow key={index} row={row} index={index} handleDelete={handleDelete} />
+        <TableRow
+          key={index}
+          row={row}
+          index={index}
+          handleDelete={handleDelete}
+        />
       ))}
     </>
   );
@@ -144,9 +159,18 @@ const RenderTableHead = (): JSX.Element => {
   );
 };
 
-const Table: FC<Props> = ({ data, paginatedData, totalPages,deleteRow }: Props) => {
+const Table: FC<Props> = () => {
   const [page, setPage] = useState<number>(1);
-  const _context =  useContext(SnackBarContext);
+  const [searchKey, setSearchKey] = useState<string>("");
+  const [sortBy, setSortBy] = useState<SortBy>(SortBy.ID);
+  const { data, paginatedData, totalPages, deleteRow, setData, apiData } =
+    useTable({
+      initData: [],
+      itemsPerPage: ITEMS_PER_PAGE,
+    });
+  const timer = useRef<NodeJS.Timeout>();
+
+  const _context = useContext(SnackBarContext);
   const switchPage = (event: any) => {
     if (event.target.id === "forward") {
       setPage((page) => page + 1);
@@ -181,18 +205,61 @@ const Table: FC<Props> = ({ data, paginatedData, totalPages,deleteRow }: Props) 
     );
   };
 
-  const  handleDeleteRow = async (id:number) => { 
-    try{
+  const handleDeleteRow = async (id: number) => {
+    try {
       await deleteRow(id);
-    }catch(err){
-      _context.showAlert(err, true)
+    } catch (err) {
+      _context.showAlert(err, true);
     }
-  }
+  };
+
+  const onSearch = (e: any) => {
+    setSearchKey(e.target.value);
+  };
+
+  const filterByKey = () => {
+    setPage(1);
+    if (!searchKey) {
+      setData(apiData);
+      return;
+    }
+    const _data = apiData.filter((row) => {
+      return row.name?.toLowerCase()?.includes(searchKey?.toLowerCase());
+    });
+    setData(_data);
+  };
+
+  useEffect(() => {
+    if (timer) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      filterByKey();
+    }, 500);
+    return () => {
+      clearTimeout(timer.current);
+    };
+  }, [searchKey]);
+
+  const onSort = (e: any) => {
+    setSortBy(e.target.value);
+  };
 
   return (
     <div className="api-table">
       <div className="table-actions">
-        <TextInput />
+        <div className="table-action-filters">
+          <TextInput
+            value={searchKey}
+            onChange={onSearch}
+            placeholder="Search by name"
+          />
+          <div className="filter-by-name">
+            <label>Sort By : </label>
+            <select onChange={onSort} value={sortBy}>
+              <option value={SortBy.ID}>ID</option>
+              <option value={SortBy.NAME}>Name</option>
+            </select>
+          </div>
+        </div>
         <DisplayPageInfo />
       </div>
       <table>
@@ -200,7 +267,10 @@ const Table: FC<Props> = ({ data, paginatedData, totalPages,deleteRow }: Props) 
           <RenderTableHead />
         </thead>
         <tbody>
-          <RenderTableBody data={paginatedData[page]} handleDelete={handleDeleteRow} />
+          <RenderTableBody
+            data={paginatedData[page]}
+            handleDelete={handleDeleteRow}
+          />
         </tbody>
       </table>
     </div>
