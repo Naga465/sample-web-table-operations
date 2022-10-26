@@ -18,8 +18,8 @@ import TextInput from "./TextInput";
 type Props = {};
 
 enum SortBy {
-  "ID",
-  "NAME",
+  "ID" = "id",
+  "NAME" = "name",
 }
 
 const headers: { label: string; apiKey: keyof ApiInfoType }[] = [
@@ -64,10 +64,12 @@ const TableRow = ({
   row,
   index,
   handleDelete,
+  handleEdit,
 }: {
   row: ApiInfoType;
   index: number;
   handleDelete?: (id: number) => void;
+  handleEdit?: (id: number) => void;
 }): JSX.Element => {
   const [viewMore, setViewMore] = useState<boolean>(false);
   const handleRowActions = async (event: any) => {
@@ -78,6 +80,8 @@ const TableRow = ({
         break;
       }
       case "edit": {
+        if (!handleEdit) return;
+        handleEdit(row.id);
         break;
       }
       case "delete": {
@@ -128,9 +132,11 @@ const TableRow = ({
 const RenderTableBody = ({
   data,
   handleDelete,
+  handleEdit,
 }: {
   data: ApiInfoType[];
   handleDelete?: (event: any) => void;
+  handleEdit?: (event: any) => void;
 }): JSX.Element => {
   if (!data) return <Fragment />;
 
@@ -142,6 +148,7 @@ const RenderTableBody = ({
           row={row}
           index={index}
           handleDelete={handleDelete}
+          handleEdit={handleEdit}
         />
       ))}
     </>
@@ -163,14 +170,24 @@ const Table: FC<Props> = () => {
   const [page, setPage] = useState<number>(1);
   const [searchKey, setSearchKey] = useState<string>("");
   const [sortBy, setSortBy] = useState<SortBy>(SortBy.ID);
-  const { data, paginatedData, totalPages, deleteRow, setData, apiData } =
-    useTable({
-      initData: [],
-      itemsPerPage: ITEMS_PER_PAGE,
-    });
-  const timer = useRef<NodeJS.Timeout>();
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [rowDetails, setRowDetails] = useState<ApiInfoType | null>(null);
 
-  const _context = useContext(SnackBarContext);
+  const {
+    data,
+    paginatedData,
+    totalPages,
+    deleteRow,
+    setData,
+    apiData,
+    updateRow,
+  } = useTable({
+    initData: [],
+    itemsPerPage: ITEMS_PER_PAGE,
+  });
+  const timer = useRef<NodeJS.Timeout>();
+  const { showAlert } = useContext(SnackBarContext);
+
   const switchPage = (event: any) => {
     if (event.target.id === "forward") {
       setPage((page) => page + 1);
@@ -208,10 +225,33 @@ const Table: FC<Props> = () => {
   const handleDeleteRow = async (id: number) => {
     try {
       await deleteRow(id);
+      showAlert(`${id} deleted successfully.`);
     } catch (err) {
-      _context.showAlert(err, true);
+      showAlert(err, true);
     }
   };
+
+  const onUpdateDetails = async () => {
+    onToggleModal();
+    if (!rowDetails) {
+      showAlert("something went wrong", true);
+      return;
+    }
+    try {
+      await updateRow(rowDetails.id, { description: rowDetails.description });
+      showAlert(`Description for the ${rowDetails.id} updated successfully.`);
+    } catch (err) {
+      showAlert(err, true);
+    }
+  };
+
+  const handleEdit = async (id: number) => {
+    const row = paginatedData[page].find((ele) => id === ele.id);
+    setRowDetails(row || null);
+    onToggleModal();
+  };
+
+  const onToggleModal = () => setShowModal((value) => !value);
 
   const onSearch = (e: any) => {
     setSearchKey(e.target.value);
@@ -240,7 +280,37 @@ const Table: FC<Props> = () => {
   }, [searchKey]);
 
   const onSort = (e: any) => {
-    setSortBy(e.target.value);
+    const value: SortBy = e.target.value;
+    let _data = [...data];
+    setSortBy(value);
+    switch (value) {
+      case SortBy.ID: {
+        _data.sort((a, b) => a.id - b.id);
+
+        setData(_data);
+        break;
+      }
+      case SortBy.NAME: {
+        _data.sort((a, b) => {
+          const val1 = a.name.toLowerCase();
+          const val2 = b.name.toLowerCase();
+          if (val1 < val2) return -1;
+          if (val1 > val2) return 1;
+          return 0;
+        });
+        setData(_data);
+        break;
+      }
+      default: {
+        console.log("default");
+      }
+    }
+  };
+  const onEditDetails = (key: keyof ApiInfoType) => (event: any) => {
+    setRowDetails((row) => {
+      if (!row) return null;
+      return { ...row, [key]: event.target.value };
+    });
   };
 
   return (
@@ -270,9 +340,31 @@ const Table: FC<Props> = () => {
           <RenderTableBody
             data={paginatedData[page]}
             handleDelete={handleDeleteRow}
+            handleEdit={handleEdit}
           />
         </tbody>
       </table>
+      {showModal && (
+        <div className="dialog">
+          <div className="dialog-content">
+            <h3>{`#${rowDetails?.id} - Update`}</h3>
+            <div className="dialog-fields">
+              <p>Description</p>
+              <TextInput
+                value={rowDetails?.description}
+                onChange={onEditDetails("description")}
+                placeholder="Description"
+              />
+            </div>
+            <div className="dialog-actions">
+              <button onClick={onUpdateDetails}>Update</button>
+              <button onClick={onToggleModal} className="close-btn">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

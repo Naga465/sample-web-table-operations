@@ -9,7 +9,11 @@ export async function callApi({ endpoint, method, reqBody }: APIRequestInfo) {
     accept: "application/json",
   };
   try {
-    const response = await fetch(endpoint, { method, headers:DEFAULT_HEADERS, body: reqBody });
+    const response = await fetch(endpoint, {
+      method,
+      headers: DEFAULT_HEADERS,
+      body: !!reqBody ? JSON.stringify(reqBody) : undefined,
+    });
     if (response.status > 200) {
       console.log(response);
       throw response.statusText;

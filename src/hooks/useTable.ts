@@ -12,23 +12,57 @@ function useTable({ initData = [], itemsPerPage = 10 }: Props) {
   const [paginatedData, setPaginatedData] = useState<PageData>({});
   const totalPages = useRef<number>(1);
   const apiData = useRef<ApiInfoType[]>(initData);
-  
-  useEffect(() => {
-    async function fetchApisInfo() {
+
+  const getApisList = useCallback(async () => {
+    try {
+      const RequestInfo: APIRequestInfo = {
+        method: "GET",
+        endpoint: "/apis",
+      };
+      const data = await callApi(RequestInfo);
+      setData(data);
+      apiData.current = [...data];
+    } catch (err) {
+      throw err;
+    }
+  }, []);
+
+  const deleteRow = useCallback(async (id: number) => {
+    try {
+      const RequestInfo: APIRequestInfo = {
+        method: "DELETE",
+        endpoint: `/apis/${id}`,
+      };
+      await callApi(RequestInfo);
+      await getApisList();
+    } catch (err) {
+      throw err;
+    }
+  }, []);
+
+  const updateRow = useCallback(
+    async (id: number, payload: Pick<ApiInfoType, "description">) => {
       try {
         const RequestInfo: APIRequestInfo = {
-          method: "GET",
-          endpoint: "/apis",
+          method: "PUT",
+          endpoint: `/apis/${id}`,
+          reqBody: payload,
         };
-        const data = await callApi(RequestInfo);
-        setData(data);
-        apiData.current = [...data];
+        await callApi(RequestInfo);
+        await getApisList();
       } catch (err) {
         throw err;
       }
+    },
+    []
+  );
+
+  useEffect(() => {
+    async function fetchInfo() {
+      getApisList();
     }
-    fetchApisInfo();
-  }, []);
+    fetchInfo();
+  }, [getApisList]);
 
   useEffect(() => {
     let page = 1;
@@ -47,30 +81,13 @@ function useTable({ initData = [], itemsPerPage = 10 }: Props) {
     totalPages.current = page;
   }, [itemsPerPage, data]);
 
-  const deleteRow = useCallback(async (id: number) => {
-    try {
-      const RequestInfo: APIRequestInfo = {
-        method: "DELETE",
-        endpoint: `/apis/${id}`,
-      };
-      await callApi(RequestInfo);
-      setData((prev) => prev.filter((item) => item.id !== id));
-    } catch (err) {
-      throw err;
-    }
-  }, []);
-
-  const updateRow = useCallback(
-    async (id: number, payload: Pick<ApiInfoType, "description">) => {},
-    []
-  );
-
   return {
-    apiData:apiData.current,
+    apiData: apiData.current,
     data,
     paginatedData,
     totalPages: totalPages.current,
     deleteRow,
+    updateRow,
     setData,
   };
 }
