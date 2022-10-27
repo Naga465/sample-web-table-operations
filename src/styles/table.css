@@ -117,7 +117,14 @@ tfoot {
 
 .table-empty {
   text-align: center;
+  text-transform: initial;
   font-size: 16px;
+}
+
+.table-empty .loader {
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .filter-by-name label {

@@ -1,16 +1,10 @@
-import {
-  FC,
-  Fragment,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { FC, Fragment, useContext, useEffect, useRef, useState } from "react";
 import { ApiInfoType } from "../api";
 import { ITEMS_PER_PAGE } from "../constants";
 import { SnackBarContext } from "../context";
 import useTable from "../hooks/useTable";
 import "../styles/table.css";
+import Loader from "./Loader";
 import TextInput from "./TextInput";
 
 export type TableHeaders = { label: string; apiKey: keyof ApiInfoType };
@@ -19,6 +13,11 @@ export type TableProps = {
   headers: TableHeaders[];
   extraContent: TableHeaders[];
 };
+
+type LoadingState = {
+  [key: string]: { loading: boolean };
+};
+
 enum SortBy {
   "ID" = "id",
   "NAME" = "name",
@@ -45,6 +44,7 @@ const TableRow = ({
   extraContent: TableHeaders[];
 }): JSX.Element => {
   const [viewMore, setViewMore] = useState<boolean>(false);
+  const [processingActions, setProcessingActions] = useState<LoadingState>();
 
   const handleRowActions = async (event: any) => {
     if (!event.target.id) return;
@@ -60,7 +60,15 @@ const TableRow = ({
       }
       case RowActions.Delete: {
         if (!handleDelete) return;
+        setProcessingActions((prev) => ({
+          ...(prev || {}),
+          delete: { loading: true },
+        }));
         await handleDelete(row.id);
+        setProcessingActions((prev) => ({
+          ...(prev || {}),
+          delete: { loading: false },
+        }));
         break;
       }
       default: {
@@ -76,8 +84,12 @@ const TableRow = ({
         ))}
         <td>
           <div onClick={handleRowActions} className="row-actions">
-            <img id={RowActions.Edit} src="/icons/edit.png" />
-            <img id={RowActions.Delete} src="/icons/delete.png" />
+            <Loader loading={!!processingActions?.[RowActions.Edit]?.loading}>
+              <img id={RowActions.Edit} src="/icons/edit.png" />
+            </Loader>
+            <Loader loading={!!processingActions?.[RowActions.Delete]?.loading}>
+              <img id={RowActions.Delete} src="/icons/delete.png" />
+            </Loader>
             <span id={RowActions.View}>View more</span>
           </div>
         </td>
@@ -327,8 +339,9 @@ const Table: FC<TableProps> = ({ headers, extraContent }) => {
           ) : (
             <tr>
               <td className="table-empty" colSpan={6}>
-                {" "}
-                {!!searchKey ? `No match found '${searchKey}'` : "Loading..."}
+                <Loader loading={!searchKey}>
+                  {`No match results found for '${searchKey}'`}
+                </Loader>
               </td>
             </tr>
           )}
