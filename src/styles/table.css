@@ -1,20 +1,20 @@
 table {
   width: 100%;
 }
-tbody tr:nth-child(2n) {
-  /* background-color: #f2f2f2; */
-}
+
 td {
   padding: 16px;
   font-size: 14px;
   text-transform: capitalize;
   /* text-align: center; */
 }
+
 thead,
 tfoot {
   background-color: #333;
   color: #fff;
 }
+
 .paginated-bar {
   display: flex;
   flex-direction: row;
@@ -22,6 +22,7 @@ tfoot {
   align-items: center;
   margin-top: 30px;
 }
+
 .page-circle {
   width: 26px;
   height: 26px;
@@ -35,6 +36,7 @@ tfoot {
   justify-content: center;
   margin-left: 8px;
 }
+
 .table-actions {
   display: flex;
   justify-content: flex-end;
@@ -42,31 +44,38 @@ tfoot {
   height: 40px;
   margin-bottom: 20px;
 }
+
 .page-info {
   display: flex;
   align-items: center;
 }
+
 .page-action {
   margin-left: 10px;
 }
+
 .page-action img {
   width: 24px;
   margin-left: 5px;
   cursor: pointer;
 }
+
 .page-action--disabled {
   pointer-events: none;
 }
+
 .row-actions {
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .row-actions img {
   width: 30px;
   margin-right: 25px;
   cursor: pointer;
 }
+
 .row-actions span {
   margin-left: 30px;
   cursor: pointer;
@@ -84,32 +93,44 @@ tfoot {
   flex-wrap: wrap;
   text-align: left;
 }
+
 .row-collapse div {
   margin: 15px;
 }
+
 .field-label {
   font-weight: bold;
 }
+
 .table-action-filters {
   display: flex;
   flex-direction: row;
   width: 60%;
 }
+
 .table-action-filters .filter-by-name {
   margin-left: 50px;
   display: flex;
   flex-direction: row;
   align-items: center;
 }
+
+.table-empty {
+  text-align: center;
+  font-size: 16px;
+}
+
 .filter-by-name label {
   width: max-content;
   padding-right: 8px;
   font-weight: bold;
 }
+
 .filter-by-name select {
   padding: 10px;
   font-size: 14px;
 }
+
 .dialog {
   position: absolute;
   top: 50%;
@@ -122,31 +143,37 @@ tfoot {
   color: white;
   border-radius: 10px;
 }
+
 .dialog-content {
   display: flex;
   flex-direction: column;
   padding: 30px;
 }
+
 .dialog-content h3 {
   margin-bottom: 15px;
   width: 100%;
   text-align: left;
   text-transform: uppercase;
 }
+
 .dialog-fields .text-input {
   padding: 6px;
   width: 200px;
 }
+
 .dialog-fields p {
   font-size: 14px;
   font-weight: bold;
   color: #333;
 }
+
 .dialog-actions {
   display: flex;
   align-items: center;
   margin-top: 25px;
 }
+
 .dialog-actions button {
   padding: 10px;
   background-color: rgb(39, 39, 230);
@@ -156,6 +183,7 @@ tfoot {
   border-radius: 5px;
   text-transform: uppercase;
 }
+
 .dialog-actions .close-btn {
   background-color: transparent;
   color: black;

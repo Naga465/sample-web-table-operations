@@ -1,96 +1,66 @@
 import {
   FC,
   Fragment,
-  useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
 } from "react";
-import { ApiInfoType, PageData } from "../api";
+import { ApiInfoType } from "../api";
 import { ITEMS_PER_PAGE } from "../constants";
 import { SnackBarContext } from "../context";
 import useTable from "../hooks/useTable";
 import "../styles/table.css";
-import { debounce } from "../utils";
 import TextInput from "./TextInput";
 
-type Props = {};
+export type TableHeaders = { label: string; apiKey: keyof ApiInfoType };
 
+export type TableProps = {
+  headers: TableHeaders[];
+  extraContent: TableHeaders[];
+};
 enum SortBy {
   "ID" = "id",
   "NAME" = "name",
 }
-
-const headers: { label: string; apiKey: keyof ApiInfoType }[] = [
-  {
-    label: "ID",
-    apiKey: "id",
-  },
-  {
-    label: "NAME",
-    apiKey: "name",
-  },
-  {
-    label: "DESCRIPTION",
-    apiKey: "description",
-  },
-];
-
-const extraContent: { label: string; apiKey: keyof ApiInfoType }[] = [
-  {
-    label: "Create At",
-    apiKey: "createdAt",
-  },
-  {
-    label: "Updated At",
-    apiKey: "updatedAt",
-  },
-  {
-    label: "Type",
-    apiKey: "type",
-  },
-  {
-    label: "Operation Name",
-    apiKey: "operationName",
-  },
-  {
-    label: "Query",
-    apiKey: "query",
-  },
-];
+enum RowActions {
+  View = "view",
+  Edit = "edit",
+  Delete = "delete",
+}
 
 const TableRow = ({
   row,
   index,
   handleDelete,
   handleEdit,
+  headers,
+  extraContent,
 }: {
   row: ApiInfoType;
   index: number;
-  handleDelete?: (id: number) => void;
+  handleDelete?: (id: number) => Promise<void>;
   handleEdit?: (id: number) => void;
+  headers: TableHeaders[];
+  extraContent: TableHeaders[];
 }): JSX.Element => {
   const [viewMore, setViewMore] = useState<boolean>(false);
+
   const handleRowActions = async (event: any) => {
     if (!event.target.id) return;
     switch (event.target.id) {
-      case "view": {
+      case RowActions.View: {
         setViewMore((prev) => !prev);
         break;
       }
-      case "edit": {
+      case RowActions.Edit: {
         if (!handleEdit) return;
         handleEdit(row.id);
         break;
       }
-      case "delete": {
+      case RowActions.Delete: {
         if (!handleDelete) return;
-        try {
-          await handleDelete(row.id);
-        } catch (err) {
-          alert(err);
-        }
+        await handleDelete(row.id);
         break;
       }
       default: {
@@ -106,9 +76,9 @@ const TableRow = ({
         ))}
         <td>
           <div onClick={handleRowActions} className="row-actions">
-            <img id="edit" src="/icons/edit.png" />
-            <img id="delete" src="/icons/delete.png" />
-            <span id="view">View more</span>
+            <img id={RowActions.Edit} src="/icons/edit.png" />
+            <img id={RowActions.Delete} src="/icons/delete.png" />
+            <span id={RowActions.View}>View more</span>
           </div>
         </td>
       </tr>
@@ -129,14 +99,19 @@ const TableRow = ({
     </>
   );
 };
+
 const RenderTableBody = ({
   data,
   handleDelete,
   handleEdit,
+  headers,
+  extraContent,
 }: {
   data: ApiInfoType[];
-  handleDelete?: (event: any) => void;
+  handleDelete?: (event: any) => Promise<void>;
   handleEdit?: (event: any) => void;
+  headers: TableHeaders[];
+  extraContent: TableHeaders[];
 }): JSX.Element => {
   if (!data) return <Fragment />;
 
@@ -149,13 +124,17 @@ const RenderTableBody = ({
           index={index}
           handleDelete={handleDelete}
           handleEdit={handleEdit}
+          headers={headers}
+          extraContent={extraContent}
         />
       ))}
     </>
   );
 };
 
-const RenderTableHead = (): JSX.Element => {
+const RenderTableHead = ({
+  headers,
+}: Pick<TableProps, "headers">): JSX.Element => {
   return (
     <tr>
       {headers.map(({ label }) => (
@@ -166,7 +145,7 @@ const RenderTableHead = (): JSX.Element => {
   );
 };
 
-const Table: FC<Props> = () => {
+const Table: FC<TableProps> = ({ headers, extraContent }) => {
   const [page, setPage] = useState<number>(1);
   const [searchKey, setSearchKey] = useState<string>("");
   const [sortBy, setSortBy] = useState<SortBy>(SortBy.ID);
@@ -188,7 +167,17 @@ const Table: FC<Props> = () => {
   const timer = useRef<NodeJS.Timeout>();
   const { showAlert } = useContext(SnackBarContext);
 
-  const switchPage = (event: any) => {
+  useEffect(() => {
+    if (timer) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      filterByKey();
+    }, 500);
+    return () => {
+      clearTimeout(timer.current);
+    };
+  }, [searchKey]);
+
+  const onSwitchPage = (event: any) => {
     if (event.target.id === "forward") {
       setPage((page) => page + 1);
       return;
@@ -196,38 +185,6 @@ const Table: FC<Props> = () => {
     if (event.target.id === "back") {
       setPage((page) => page - 1);
       return;
-    }
-  };
-
-  const DisplayPageInfo = (): JSX.Element => {
-    const pageLength = paginatedData[page]?.length || 1;
-    const startCount = ITEMS_PER_PAGE * (page - 1) + 1;
-    const endCount = startCount + pageLength - 1;
-    return (
-      <div className="page-info">
-        <label>{`${startCount}-${endCount} of ${data.length}`}</label>
-        <div onClick={switchPage} className="page-action">
-          <img
-            className={page === 1 ? "page-action--disabled" : ""}
-            id="back"
-            src="/icons/page-back.png"
-          />
-          <img
-            className={page >= totalPages ? "page-action--disabled" : ""}
-            id="forward"
-            src="/icons/page-forward.png"
-          />
-        </div>
-      </div>
-    );
-  };
-
-  const handleDeleteRow = async (id: number) => {
-    try {
-      await deleteRow(id);
-      showAlert(`${id} deleted successfully.`);
-    } catch (err) {
-      showAlert(err, true);
     }
   };
 
@@ -245,7 +202,16 @@ const Table: FC<Props> = () => {
     }
   };
 
-  const handleEdit = async (id: number) => {
+  const onDeleteRow = async (id: number) => {
+    try {
+      await deleteRow(id);
+      showAlert(`${id} deleted successfully.`);
+    } catch (err) {
+      showAlert(err, true);
+    }
+  };
+
+  const onEditRow = (id: number) => {
     const row = paginatedData[page].find((ele) => id === ele.id);
     setRowDetails(row || null);
     onToggleModal();
@@ -268,16 +234,6 @@ const Table: FC<Props> = () => {
     });
     setData(_data);
   };
-
-  useEffect(() => {
-    if (timer) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      filterByKey();
-    }, 500);
-    return () => {
-      clearTimeout(timer.current);
-    };
-  }, [searchKey]);
 
   const onSort = (e: any) => {
     const value: SortBy = e.target.value;
@@ -313,6 +269,29 @@ const Table: FC<Props> = () => {
     });
   };
 
+  const DisplayPageInfo = (): JSX.Element => {
+    const pageLength = paginatedData[page]?.length || 1;
+    const startCount = ITEMS_PER_PAGE * (page - 1) + 1;
+    const endCount = startCount + pageLength - 1;
+    return (
+      <div className="page-info">
+        <label>{`${startCount}-${endCount} of ${data.length}`}</label>
+        <div onClick={onSwitchPage} className="page-action">
+          <img
+            className={page === 1 ? "page-action--disabled" : ""}
+            id="back"
+            src="/icons/page-back.png"
+          />
+          <img
+            className={page >= totalPages ? "page-action--disabled" : ""}
+            id="forward"
+            src="/icons/page-forward.png"
+          />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="api-table">
       <div className="table-actions">
@@ -334,14 +313,25 @@ const Table: FC<Props> = () => {
       </div>
       <table>
         <thead>
-          <RenderTableHead />
+          <RenderTableHead headers={headers} />
         </thead>
         <tbody>
-          <RenderTableBody
-            data={paginatedData[page]}
-            handleDelete={handleDeleteRow}
-            handleEdit={handleEdit}
-          />
+          {!!paginatedData[page]?.length ? (
+            <RenderTableBody
+              data={paginatedData[page]}
+              handleDelete={onDeleteRow}
+              handleEdit={onEditRow}
+              extraContent={extraContent}
+              headers={headers}
+            />
+          ) : (
+            <tr>
+              <td className="table-empty" colSpan={6}>
+                {" "}
+                {!!searchKey ? `No match found '${searchKey}'` : "Loading..."}
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
       {showModal && (

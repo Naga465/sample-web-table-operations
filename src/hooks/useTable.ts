@@ -33,8 +33,9 @@ function useTable({ initData = [], itemsPerPage = 10 }: Props) {
         method: "DELETE",
         endpoint: `/apis/${id}`,
       };
-      await callApi(RequestInfo);
+      const response: ApiInfoType = await callApi(RequestInfo);
       await getApisList();
+      return response;
     } catch (err) {
       throw err;
     }
@@ -48,8 +49,9 @@ function useTable({ initData = [], itemsPerPage = 10 }: Props) {
           endpoint: `/apis/${id}`,
           reqBody: payload,
         };
-        await callApi(RequestInfo);
+        const response: ApiInfoType = await callApi(RequestInfo);
         await getApisList();
+        return response;
       } catch (err) {
         throw err;
       }
